@@ -177,9 +177,52 @@
       // Update selected info UI
       const selInfo = document.getElementById('selected-info');
       selInfo.textContent = App.state.selectedId ? (findById(App.state.selectedId).type || '') : 'None';
+      updateFloatingDeleteButton();
     } catch(e){ console.error('Render failed', e); }
   };
 
+
+  // Position and visibility helper for the floating delete button
+  function updateFloatingDeleteButton(){
+    try{
+      const btn = document.getElementById('btn-delete-float');
+      if(!btn) return;
+      const canvas = document.getElementById('designer-canvas');
+      if(!canvas){ btn.classList.add('hidden'); return; }
+      const selId = App.state.selectedId;
+      if(!selId){ btn.classList.add('hidden'); return; }
+      const sel = findById(selId);
+      if(!sel){ btn.classList.add('hidden'); return; }
+
+      // Determine handle point in design coordinates (same logic as drawing the handle)
+      let hx = sel.x, hy = sel.y;
+      if(sel.type === 'rect' || sel.type === 'image'){ hx = sel.x + (sel.w||0)/2; hy = sel.y + (sel.h||0)/2; }
+      else if(sel.type === 'circle' || sel.type === 'star'){ hx = sel.x + (sel.r||0); hy = sel.y + (sel.r||0); }
+      else if(sel.type === 'triangle'){ hx = sel.x + (sel.w||0)/2; hy = sel.y + (sel.h||0)/2; }
+      else if(sel.type === 'text'){ const wApprox = (sel.text || '').length * (sel.fontSize||28) * 0.5; const hApprox = (sel.fontSize||28) * 1.3; hx = sel.x + wApprox/2 + 8; hy = sel.y + hApprox/2 + 8; }
+
+      // Map design coordinates to client coordinates relative to the canvas parent (the .relative container)
+      const canvasRect = canvas.getBoundingClientRect();
+      const parentRect = canvas.parentElement.getBoundingClientRect();
+      const designW = App.state.canvas.w || canvas.width || 800;
+      const designH = App.state.canvas.h || canvas.height || 800;
+      const clientX = canvasRect.left + (hx / designW) * canvasRect.width;
+      const clientY = canvasRect.top + (hy / designH) * canvasRect.height;
+
+      // Position slightly offset to the right and above the handle point
+      const offsetX = 8; // px to the right
+      const offsetY = -18; // px above
+      const relLeft = Math.round(clientX - parentRect.left + offsetX);
+      const relTop = Math.round(clientY - parentRect.top + offsetY);
+
+      btn.style.left = relLeft + 'px';
+      btn.style.top = relTop + 'px';
+      btn.classList.remove('hidden');
+    } catch(e){
+      // On any error, hide button to avoid broken UI
+      try{ document.getElementById('btn-delete-float')?.classList.add('hidden'); }catch(_){}
+    }
+  }
   function drawHandle(ctx, x, y){ ctx.save(); ctx.fillStyle = '#fff'; ctx.strokeStyle = '#4f46e5'; ctx.lineWidth = 2; ctx.beginPath(); ctx.rect(x-8, y-8, 16, 16); ctx.fill(); ctx.stroke(); ctx.restore(); }
 
   // Hit test: return top-most object under point
@@ -243,6 +286,7 @@
           reader.onload = function(ev){
             const dataUrl = ev.target.result;
             // create the image object in state; will be updated when the image loads
+
             const obj = App.createShape('image', { src: dataUrl, w: 240, h: 160 });
             const img = new Image();
             // data URLs are same-origin so no crossOrigin needed
@@ -269,6 +313,9 @@
         };
         document.body.appendChild(input);
         input.click();
+      } else if (t === 'delete'){
+        App.deleteSelected();
+        App.render();
       } else {
         App.createShape(t);
         App.render();
@@ -285,12 +332,17 @@
     $('#btn-delete').on('click', function(){ App.deleteSelected(); App.render(); });
 
     // Keyboard delete: allow Delete/Backspace to remove selected object when not typing
+    // Floating delete button (click proxied to same delete behavior)
+    $('#btn-delete-float').on('click', function(){ App.deleteSelected(); App.render(); });
     $(document).on('keydown', function(e){
       try {
-        const active = document.activeElement && document.activeElement.tagName;
-        // don't intercept when user is typing in an input/textarea
-        if(active && /INPUT|TEXTAREA/i.test(active)) return;
-        if(e.key === 'Delete' || e.key === 'Backspace'){
+        const activeEl = document.activeElement;
+        const tag = activeEl && activeEl.tagName;
+        const isEditable = activeEl && (activeEl.isContentEditable || /INPUT|TEXTAREA|SELECT/i.test(tag));
+        if(isEditable) return;
+        const key = e.key || '';
+        const code = e.which || e.keyCode || 0;
+        if(key === 'Delete' || key === 'Backspace' || code === 46 || code === 8){
           if(App.state.selectedId){
             e.preventDefault();
             App.deleteSelected();
