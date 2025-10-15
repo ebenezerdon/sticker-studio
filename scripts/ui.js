@@ -283,6 +283,25 @@
     $('#font-family').on('change', function(){ const v = $(this).val(); const sel = findById(App.state.selectedId); if(sel && sel.type === 'text'){ sel.fontFamily = v; App.saveCurrent(); App.render(); } });
     $('#bold-toggle').on('change', function(){ const v = $(this).prop('checked'); const sel = findById(App.state.selectedId); if(sel && sel.type === 'text'){ sel.bold = !!v; App.saveCurrent(); App.render(); } });
     $('#btn-delete').on('click', function(){ App.deleteSelected(); App.render(); });
+
+    // Keyboard delete: allow Delete/Backspace to remove selected object when not typing
+    $(document).on('keydown', function(e){
+      try {
+        const active = document.activeElement && document.activeElement.tagName;
+        // don't intercept when user is typing in an input/textarea
+        if(active && /INPUT|TEXTAREA/i.test(active)) return;
+        if(e.key === 'Delete' || e.key === 'Backspace'){
+          if(App.state.selectedId){
+            e.preventDefault();
+            App.deleteSelected();
+            App.render();
+          }
+        }
+      } catch (err) {
+        // swallow errors to avoid breaking other handlers
+        console.error('Key delete handler error', err);
+      }
+    });
     $('#btn-bring-front').on('click', function(){ App.bringToFront(); App.render(); });
     $('#btn-clear').on('click', function(){ if(confirm('Start a new design? Unsaved changes will be lost.')){ App.clearAll(); } });
     $('#btn-save').on('click', function(){ const name = ($('#save-name').val() || '').trim(); if(!name){ alert('Please enter a save name.'); return; } const saves = window.App.Storage.loadSaves(); saves.push({ name: name, objects: window.App.Utils.clone(App.state.objects), created: Date.now() }); window.App.Storage.saveSaves(saves); App.renderSavesList(); alert('Saved locally.'); });
