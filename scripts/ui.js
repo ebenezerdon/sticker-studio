@@ -33,8 +33,12 @@
 
   // Create default objects
   App.createShape = function(type, opts){
-    const uid = window.App.Utils.uid('obj');
-    const base = { id: uid, type: type, x: 400, y: 400, fill: '#FF6B6B', stroke: '#0f172a', strokeWidth: 2, opacity: 1 };
+    // Use the current Fill/Stroke controls as defaults for newly created shapes
+    const fillEl = document.getElementById('color-fill');
+    const strokeEl = document.getElementById('color-stroke');
+    const defaultFill = (fillEl && fillEl.value) ? fillEl.value : '#FF6B6B';
+    const defaultStroke = (strokeEl && strokeEl.value) ? strokeEl.value : '#0f172a';
+    const base = { id: App.Utils.uid(), type: type, x: 400, y: 400, fill: defaultFill, stroke: defaultStroke, strokeWidth: 2, opacity: 1 };
     if(type === 'rect') { Object.assign(base, { w: 200, h: 120 }); }
     if(type === 'circle') { Object.assign(base, { r: 90 }); }
     if(type === 'triangle') { Object.assign(base, { w: 180, h: 160 }); }
