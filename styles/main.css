@@ -1,0 +1,34 @@
+/* styles/main.css
+   General custom CSS for Sticker Studio. Keep Tailwind utilities in HTML. */
+
+html, body {
+  height: 100%;
+}
+
+/* Make canvas responsive while keeping pixel dimensions correct */
+#designer-canvas {
+  background: linear-gradient(180deg, #ffffff 0%, #fffaf0 100%);
+  border-radius: 12px;
+  display: block;
+}
+
+#text-editor {
+  min-width: 120px;
+  min-height: 36px;
+  resize: none;
+  font-family: inherit;
+  box-shadow: 0 6px 18px rgba(15,23,42,0.08);
+}
+
+/* Small utility tweaks */
+.card { background: #fff; }
+
+/* Ensure high contrast focus outlines */
+:focus { outline: 3px solid rgba(99,102,241,0.18); outline-offset: 2px; }
+
+/* Selection handle */
+.handle { width: 12px; height: 12px; background: #fff; border: 2px solid #4f46e5; border-radius: 2px; }
+
+/* Make sure scrollbar visible for saves list */
+#saves-list::-webkit-scrollbar { height: 8px; width: 8px; }
+#saves-list::-webkit-scrollbar-thumb { background: rgba(99,102,241,0.2); border-radius: 8px; }
